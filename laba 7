@@ -1,0 +1,97 @@
+import tkinter as tk
+from tkinter import scrolledtext
+import itertools
+
+def distance(p1, p2):
+    return (p2[0] - p1[0])**2 + (p2[1] - p1[1])**2
+
+def is_square(p1, p2, p3, p4):
+    distances = [distance(p1, p2), distance(p1, p3), distance(p1, p4), distance(p2, p3), distance(p2, p4), distance(p3, p4)]
+    distances.sort()
+    
+    if distances[0] > 0 and distances[0] == distances[1] == distances[2] == distances[3] and distances[4] == distances[5]:
+        side = distances[0]**0.5
+        area = side**2
+        return area
+
+    return 0
+
+def find_squares(points):
+    squares = []
+    max_area = 0
+
+    for square in itertools.combinations(points, 4):
+        if is_square(*square):
+            area = is_square(*square)
+            if area > max_area:
+                squares = [square]
+                max_area = area
+            elif area == max_area:
+                squares.append(square)
+    return squares
+
+def find_squares_button_clicked(num_points, entries, output_area):
+    points = []
+    for i in range(num_points):
+        x, y = int(entries[i][0].get()), int(entries[i][1].get())
+        points.append((x, y))
+
+    squares = find_squares(points)
+    output_area.delete(1.0, tk.END)
+    output_area.insert(tk.INSERT, "Возможные вершины квадрата с максимальной площадью:\n")
+    for square in squares:
+        output_area.insert(tk.INSERT, str(square) + "\n")
+
+def main():
+    root = tk.Tk()
+    root.title("Поиск квадрата с максимальной площадью")
+
+    frame = tk.Frame(root)
+    frame.pack()
+
+    label = tk.Label(frame, text="Введите количество точек:")
+    label.grid(row=0, column=0)
+
+    entry = tk.Entry(frame)
+    entry.grid(row=0, column=1)
+
+    def create_point_inputs():
+        num_points = int(entry.get())
+        for i in range(num_points):
+            x_label = tk.Label(frame, text=f"Точка {i+1} (x, y):")
+            x_label.grid(row=i+1, column=0)
+
+            x_entry = tk.Entry(frame)
+            x_entry.grid(row=i+1, column=1)
+
+            y_entry = tk.Entry(frame)
+            y_entry.grid(row=i+1, column=2)
+
+            entries.append((x_entry, y_entry))
+        
+        button.grid(row=num_points + 2, column=1)
+
+        create_point_inputs_button.destroy()
+        
+    create_point_inputs_button = tk.Button(frame, text="Ввести точки", command=create_point_inputs)
+    create_point_inputs_button.grid(row=1, column=3)
+
+    entries = []
+
+    output_area = scrolledtext.ScrolledText(root, wrap=tk.WORD, width=40, height=10)
+    output_area.pack(pady=10)
+
+    button = tk.Button(frame, text="Найти квадрат", command=lambda: find_squares_button_clicked(num_points, entries, output_area))
+
+    root.update_idletasks()
+
+    width = root.winfo_width()
+    height = root.winfo_height()
+    x_offset = (root.winfo_screenwidth() - width) // 2
+    y_offset = (root.winfo_screenheight() - height) // 2
+    root.geometry(f'+{x_offset}+{y_offset}')
+
+    root.mainloop()
+
+if __name__ == "__main__":
+    main()
