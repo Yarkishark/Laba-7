@@ -4,14 +4,16 @@
 На плоскости задано К точек. Сформировать все возможные варианты выбора множества точек из них на 
 проверку того, что они являются вершинами квадрата с максимальной площадью."""
 
-import tkinter as tk
 import itertools
+import tkinter as tk
+from tkinter import messagebox
 
 def distance(p1, p2):
     return (p2[0] - p1[0])**2 + (p2[1] - p1[1])**2
 
 def is_square(p1, p2, p3, p4):
-    distances = [distance(p1, p2), distance(p1, p3), distance(p1, p4), distance(p2, p3), distance(p2, p4), distance(p3, p4)]
+    distances = [distance(p1, p2), distance(p1, p3), distance(p1, p4),
+                 distance(p2, p3), distance(p2, p4), distance(p3, p4)]
     distances.sort()
     return distances[0] > 0 and distances[0] == distances[1] == distances[2] == distances[3] and distances[4] == distances[5]
 
@@ -27,56 +29,93 @@ def find_squares(points):
             if is_square(*square) and area > max_area:
                 squares = [square]
                 max_area = area
+               
     return squares
 
-def on_submit():
-    points = []
-    for entry_point in entry_points:
-        x, y = map(int, entry_point.get().split())
-        points.append((x, y))
-    squares = find_squares(points)
-    output_text.delete(1.0, tk.END)
-    output_text.insert(tk.END, "Квадрат с максимальной площадью и вершинами в одном квадранте:\n")
-    for square in squares:
-        output_text.insert(tk.END, str(square) + "\n")
+def on_next_button_press():
+    global index
+    try:
+        k = int(num_entries.get())
+        if k <= 3:
+            messagebox.showerror("Ошибка", "Пожалуйста введите число больше или равно 4.")
+            num_entries.delete(0, 'end')
+        else:
+            num_entries.config(state='disabled')
+            next_button.config(state='disabled')
+            for i in range(k):
+                coord_entries.append([])
+                label = tk.Label(canvas, text=f"Введите координаты {i+1} точки (через пробел):")
+                label.pack()
+                entry = tk.Text(canvas, height=1, width=15)
+                coord_entries[i].append(entry)
+                entry.pack()
+            
+            search_button.pack()
+    except ValueError:
+        messagebox.showerror("Ошибка", "Пожалуйста, введите количество точек целым числом.")
+        num_entries.delete(0, 'end')
 
-def create_point_entries():
-    k = int(entry.get())
-    for widget in entry_points_widgets:
-        widget.destroy()
-    entry_points.clear()
-    entry_points_widgets.clear()
-    for i in range(k):
-        label_point = tk.Label(root, text=f"Введите координаты точки {i+1} (через пробел):")
-        label_point.pack()
-        entry_point = tk.Entry(root)
-        entry_point.pack()
-        entry_points.append(entry_point)
-        entry_points_widgets.append(label_point)
-        entry_points_widgets.append(entry_point)
+def on_search_button_press():
+    points = []
+    for entry in coord_entries:
+        try:
+            input_text = entry[0].get("1.0", tk.END).strip().split()
+            x = int(input_text[0])
+            y = int(input_text[1])
+            if (x, y) in points:
+                messagebox.showerror("Ошибка", "Точка с такими координатами уже была введена. Пожалуйста, введите другие координаты.")
+                entry[0].delete("1.0", tk.END)
+                entry[0].focus_set()
+                return
+            if x <= 0 or y <= 0:
+                messagebox.showerror("Ошибка", "Пожалуйста, введите две положительные координаты для точки.")
+                entry[0].delete("1.0", tk.END)
+                entry[0].focus_set()
+                return
+            points.append((x, y))
+        except (ValueError, IndexError):
+            messagebox.showerror("Ошибка", "Пожалуйста, введите количество точек целым числом.")
+            entry[0].delete("1.0", tk.END)
+            entry[0].focus_set()
+            return
+    
+    squares = find_squares(points)
+    if squares:
+        result_text.config(state='normal')
+        result_text.delete('1.0', tk.END)
+        result_text.insert(tk.END, "Квадрат с максимальной площадью и вершинами в одном квадранте:\n")
+        for square in squares:
+            result_text.insert(tk.END, f"{square}\n")
+        result_text.config(state='disabled')
+    else:
+        result_text.config(state='normal')
+        result_text.delete('1.0', tk.END)
+        result_text.insert(tk.END, "Из данных точек невозможно образовать квадрат(ы).")
+        result_text.config(state='disabled')
 
 root = tk.Tk()
-root.title("Поиск квадрата с максимальной площадью")
+root.title("Square Finder")
 
-label = tk.Label(root, text="Введите количество точек:")
-label.pack()
-entry = tk.Entry(root)
-entry.pack()
+num_label = tk.Label(root, text="Введите количество точек:")
+num_label.pack()
 
-entry_points = []
-entry_points_widgets = []
+num_entries = tk.Entry(root)
+num_entries.pack()
 
-submit_button = tk.Button(root, text="Подтвердить количество точек", command=create_point_entries)
-submit_button.pack()
+next_button = tk.Button(root, text="Далее", command=on_next_button_press)
+next_button.pack()
 
-submit_button_find = tk.Button(root, text="Поиск", command=on_submit)
-submit_button_find.pack()
+coord_entries = []
+canvas = tk.Canvas(root, width=300, height=210, bg="white")
+canvas.pack()
 
-output_text = tk.Text(root, height=10, width=40)
-output_text.pack()
+search_button = tk.Button(root, text="Поиск", command=on_search_button_press)
 
-window_width = 400
-window_height = 300
+result_text = tk.Text(root, height=10, width=80)
+result_text.pack()
+
+window_width = 500
+window_height = 500
 screen_width = root.winfo_screenwidth()
 screen_height = root.winfo_screenheight()
 x_coordinate = int((screen_width/2) - (window_width/2))
@@ -84,3 +123,4 @@ y_coordinate = int((screen_height/2) - (window_height/2))
 root.geometry("{}x{}+{}+{}".format(window_width, window_height, x_coordinate, y_coordinate))
 
 root.mainloop()
+
